@@ -286,10 +286,11 @@
     font-weight: 400;
     text-transform: uppercase;
     margin: 70px auto 30px;
+    user-select: none;
   }
 
   .lexicon-container {
-    width: 80%;
+    width: 90%;
     margin: 0 auto;
   }
 
@@ -306,6 +307,7 @@
   .word-count {
     margin: -25px 0 0;
     color: #888;
+    user-select: none;
   }
 
   .btn-signin {
