@@ -123,7 +123,7 @@
         if(this.fuid && this.user) {
           const usersCollection = firestore.collection('users');
           const lexDoc = usersCollection.doc(this.fuid);
-          lexDoc.collection('lexicon').add({ id: timestamp, text: this.word, timestamp: timestamp })
+          lexDoc.collection('lexicon').add({ id: timestamp, text: this.word.trim(), timestamp: timestamp })
             .then(doc => {
 
               // Update the word's id to match the DB's reference ID for the word
@@ -138,7 +138,7 @@
         }
 
         // Add words to session words list (if not signed in)
-        this.words.push({ id: timestamp, text: this.word });
+        this.words.push({ id: timestamp, text: this.word.trim() });
         this.word = '';
       },
       onDeleteWord(word){
@@ -149,7 +149,7 @@
           lexDoc.collection('lexicon').doc(word.id).delete()
             .then(() => {
               // eslint-disable-next-line
-              console.log('Word successfully removed from Firebase lexicon:');
+              // console.log('Word successfully removed from Firebase lexicon:');
             })
             .catch(error => {
               // eslint-disable-next-line

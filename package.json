@@ -17,8 +17,11 @@
   },
   "scripts": {
     "serve": "vue-cli-service serve",
+    "serve:open": "vue-cli-service serve --open",
     "build": "vue-cli-service build",
-    "lint": "vue-cli-service lint"
+    "build:target": "vue-cli-service build --target lib --name bundle src/main.js",
+    "lint": "vue-cli-service lint",
+    "inspect": "vue-cli-service inspect"
   },
   "author": "Jon White",
   "license": "MIT",
