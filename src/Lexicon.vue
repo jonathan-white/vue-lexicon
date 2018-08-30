@@ -49,7 +49,7 @@
   // Pulls the user's wordlist from the database
   const getWordList = (userId) => {
     let tempList = [];
-    console.log('getWordList attempt');
+    console.log('getWordList');
     firestore.collection('users').doc(userId).collection('lexicon').get()
       .then(querySnapshot => {
       querySnapshot.forEach(doc => {
@@ -97,13 +97,25 @@
         }
       }, 500);
 
+      // Subscribe to updates from other devices/instances
       if(auth.currentUser) {
         firestore.collection('users').doc(auth.currentUser.uid)
           .onSnapshot(doc => {
-            console.log(doc);
-            console.log('Current data:',doc.data());
             lastSignIn = doc.data().lastSignIn;
             lastSignOut = doc.data().lastSignOut;
+          });
+
+        firestore.collection('users').doc(auth.currentUser.uid).collection('lexicon')
+          .onSnapshot(lexCollection => {
+            let tempList = [];
+            lexCollection.docs.forEach(doc => {
+              doc.ref.get().then(docItem => tempList.push(docItem.data()));
+            })
+
+            if(tempList) {
+              this.words = tempList;
+            }
+
           })
       }
     },
