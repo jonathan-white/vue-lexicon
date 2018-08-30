@@ -133,9 +133,11 @@
           return;
         }
 
+        const newWord = this.word.trim().toLowerCase();
+
         // TODO: Check database if word already exists
-        if (this.words.map(w => w.text).includes(this.word)){
-          this.word = '';
+        if (this.words.map(w => w.text).includes(newWord)){
+          newWord = '';
           return;
         }
 
@@ -146,7 +148,7 @@
           firestore.collection('users').doc(auth.currentUser.uid).collection('lexicon')
             .add({ 
               id: timestamp, 
-              text: this.word.trim(), 
+              text: newWord, 
               timestamp: timestamp 
             })
             .then(doc => {
@@ -162,7 +164,7 @@
         }
 
         // Add words to session words list (if not signed in)
-        this.words.push({ id: timestamp, text: this.word.trim() });
+        this.words.push({ id: timestamp, text: newWord });
         this.word = '';
       },
       onDeleteWord(word){
