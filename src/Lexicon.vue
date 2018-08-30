@@ -101,6 +101,7 @@
       if(auth.currentUser) {
         firestore.collection('users').doc(auth.currentUser.uid)
           .onSnapshot(doc => {
+            // console.log(doc.data());
             lastSignIn = doc.data().lastSignIn;
             lastSignOut = doc.data().lastSignOut;
           });
@@ -109,10 +110,14 @@
           .onSnapshot(lexCollection => {
             let tempList = [];
             lexCollection.docs.forEach(doc => {
-              doc.ref.get().then(docItem => tempList.push(docItem.data()));
+              doc.ref.get().then(docItem => {
+                // console.log(docItem.data());
+                tempList.push(docItem.data());
+              });
             })
 
             if(tempList) {
+              console.log('Word Count:',tempList.length);
               this.words = tempList;
             }
 
