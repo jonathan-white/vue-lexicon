@@ -26,7 +26,7 @@
           @click="showMenu = !showMenu"
         />
         <div class="userDetails">
-          <div class="provider">{{ provider }}</div>
+          <div class="provider">{{ user.providerData[0].providerId === 'google.com' ? 'Google Account' : '' }}</div>
           <div class="displayName">{{ user.displayName }}</div>
           <div class="email">{{ user.email }}</div>
         </div>
@@ -43,27 +43,20 @@
   import Letter from './components/Letter.vue';
   import { firebase, auth, firestore } from './firebase';
 
-  const sampleList = [
-    { id: 1, text: 'clean' },
-    { id: 2, text: 'the' },
-    { id: 3, text: 'house' },
-    { id: 4, text: 'buy' },
-    { id: 5, text: 'milk' }];
-
-  const local_fuid = localStorage.getItem('fuid');
-  let isSignedIn = JSON.parse(localStorage.getItem('isSignedIn'));
+  let lastSignIn = null;
+  let lastSignOut = null;
 
   // Pulls the user's wordlist from the database
   const getWordList = (userId) => {
     let tempList = [];
-    const usersCollection = firestore.collection('users');
-    const lexDoc = usersCollection.doc(userId);
-    lexDoc.collection('lexicon').get().then(querySnapshot => {
+    console.log('getWordList attempt');
+    firestore.collection('users').doc(userId).collection('lexicon').get()
+      .then(querySnapshot => {
       querySnapshot.forEach(doc => {
+        // Update the local list item to use the DB's doc number
         // console.log(doc.id, " => ", {...doc.data(), id: doc.id});
         tempList.push({...doc.data(), id: doc.id});
       });
-      // localStorage.setItem('wordList',tempList);
       return tempList;
     });
     return tempList;
@@ -77,29 +70,41 @@
     },
     data() {
       return {
-        words: sampleList,
+        words: [],
         letters: [
           'a','b','c','d','e','f','g','h','i','j','k','l','m','n','o','p','q','r','s','t','u','v','w','x','y','z'
         ],
         word: '',
-        user: auth.currentUser || null,
-        token: null,
-        showMenu: false,
-        provider: '',
-        fuid: localStorage.getItem('fuid') || null
+        user: null,
+        showMenu: false
       }
     },
 
     mounted: function() {
-      if(local_fuid && isSignedIn && localStorage.getItem('userData') && this.user === null) {
-        this.user = JSON.parse(localStorage.getItem('userData'));
+      const refresh = setInterval(() => {
+        if(!this.user) {
+          this.user = auth.currentUser;
+        }
 
-        // TODO: pull list of words from cache to ease loading times
-        this.words = getWordList(local_fuid);
-      } else if (local_fuid && isSignedIn) {
-        this.words = getWordList(local_fuid);
-      } else {
-        isSignedIn = false;
+        if (auth.currentUser) {
+          if(!localStorage.getItem('uid')) {
+            localStorage.setItem('uid',auth.currentUser.uid);
+          }
+
+          if(this.words.length === 0) {
+            this.words = getWordList(auth.currentUser.uid);
+          }
+        }
+      }, 500);
+
+      if(auth.currentUser) {
+        firestore.collection('users').doc(auth.currentUser.uid)
+          .onSnapshot(doc => {
+            console.log(doc);
+            console.log('Current data:',doc.data());
+            lastSignIn = doc.data().lastSignIn;
+            lastSignOut = doc.data().lastSignOut;
+          })
       }
     },
 
@@ -120,16 +125,18 @@
         const timestamp = new Date().getTime();
 
         // Add words to the Firebase Firestore
-        if(this.fuid && this.user) {
-          const usersCollection = firestore.collection('users');
-          const lexDoc = usersCollection.doc(this.fuid);
-          lexDoc.collection('lexicon').add({ id: timestamp, text: this.word.trim(), timestamp: timestamp })
+        if(auth.currentUser) {
+          firestore.collection('users').doc(auth.currentUser.uid).collection('lexicon')
+            .add({ 
+              id: timestamp, 
+              text: this.word.trim(), 
+              timestamp: timestamp 
+            })
             .then(doc => {
-
               // Update the word's id to match the DB's reference ID for the word
               this.words.filter(w => w.id === timestamp)[0].id = doc.id;
               // eslint-disable-next-line
-              console.log('Word successfully added to Firebase lexicon:', doc.id);
+              // console.log('Word successfully added to Firebase lexicon:', doc.id);
             })
             .catch(error => {
               // eslint-disable-next-line
@@ -143,10 +150,9 @@
       },
       onDeleteWord(word){
 
-        if(this.fuid && this.user) {
-          const usersCollection = firestore.collection('users');
-          const lexDoc = usersCollection.doc(this.fuid);
-          lexDoc.collection('lexicon').doc(word.id).delete()
+        if(auth.currentUser) {
+          firestore.collection('users').doc(auth.currentUser.uid).collection('lexicon')
+            .doc(word.id).delete()
             .then(() => {
               // eslint-disable-next-line
               // console.log('Word successfully removed from Firebase lexicon:');
@@ -167,36 +173,44 @@
         var provider = new firebase.auth.GoogleAuthProvider();
         provider.addScope('profile');
         provider.addScope('email');
+
+        // Sign in the user 
         auth.signInWithPopup(provider)
           .then(result => {
             this.user = result.user;
-            this.token = result.credential.accessToken;
-            this.provider = 'Google Account';
-            localStorage.setItem('isSignedIn', true);
-            localStorage.setItem('userData',JSON.stringify(result.user));
 
-            // Create Firebase lexicon for the user if none exists
-            if(!localStorage.getItem('fuid') && !this.fuid) {
-              const usersCollection = firestore.collection('users');
-              usersCollection.add({
+            const timestamp = new Date();
+
+            // Populate list of words once signed in
+            (result.user.uid) 
+              ? this.words = getWordList(result.user.uid) 
+              : this.words = [];
+
+            // Add user sign up/sign in details in Firestore
+            if(result.additionalUserInfo.isNewUser) {
+              const userData = {
                 displayName: result.user.displayName,
                 email: result.user.email,
                 photoURL: result.user.photoURL,
                 providerId: result.user.providerData[0].providerId,
-                uid: result.user.uid
-              }).then(docRef => {
-                // record firebase userId 
-                this.fuid = docRef.id;
-                localStorage.setItem('fuid',docRef.id);
+                signUpDate: timestamp,
+                lastSignIn: timestamp,
+                lastSignOut: timestamp
+              };
 
-                (this.fuid) ? this.words = getWordList(this.fuid) : this.words = sampleList;
+              firestore.collection('users').doc(result.user.uid)
+                .set(userData, { merge: true }).then(() => {
+                localStorage.setItem('uid',result.user.uid);
               });
-              return;
+            } else {
+              // Create a new user in Firestore
+              const userData = { lastSignIn: timestamp };
+
+              firestore.collection('users').doc(result.user.uid)
+                .set(userData, { merge: true }).then(() => {
+                localStorage.setItem('uid',result.user.uid);
+              });
             }
-
-            // Populate list of words once signed in
-            (localStorage.getItem('fuid')) ? this.words = getWordList(localStorage.getItem('fuid')) : this.words = sampleList;
-
           })
           .catch(error => {
             // eslint-disable-next-line
@@ -204,14 +218,21 @@
           })
       },
       onSignOut() {
-        auth.signOut().then(() => {
+        const timestamp = new Date();
+
+        const userData = { lastSignOut: timestamp };
+
+        firestore.collection('users').doc(this.user.uid)
+          .set(userData, { merge: true }).then(() => {
+
+          // reset variables
           this.user = null;
-          this.token = null;
           this.showMenu = false;
-          this.fuid = null;
-          this.provider = '';
-          localStorage.setItem('isSignedIn', false);
-          this.words = sampleList;
+          this.words = [];
+          localStorage.removeItem('uid');
+
+          // official signout
+          auth.signOut();
         });
       }
     }
@@ -331,7 +352,7 @@
   .userDetails .provider {
     color: #fff;
     font-size: .75rem;
-    text-transform: capitalize;
+/*    text-transform: capitalize;*/
   }
 
   .userDetails .displayName,

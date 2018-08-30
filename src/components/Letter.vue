@@ -77,10 +77,32 @@
     text-transform: uppercase;
     font-weight: 800;
     border-radius: 50%;
+    user-select: none;
+		cursor: pointer;
+		transition: background-color 750ms ease;
 	}
 
 	.letter-text.hasWords {
 		background-color: rgba(255, 0, 72, 1);
+	}
+	.letter-text.hasWords.highlight-one {
+		background-color: #ff0048;
+	}
+	.letter-text.hasWords.highlight-two {
+		background-color: #ff001e;
+	}
+	.letter-text.hasWords.highlight-three {
+		background-color: #e1001e;
+	}
+	.letter-text.hasWords.highlight-four {
+		background-color: #c9001e;
+	}
+	.letter-text.hasWords.highlight-five {
+		background-color: #99001e;
+	}
+
+	.letter-text:hover {
+		background-color: rgba(26, 151, 216, .7);
 	}
 
 	.letter-wordCount {
