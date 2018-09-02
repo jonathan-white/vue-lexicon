@@ -1,11 +1,10 @@
 <template>
-	<div class="letter" 
-		v-bind:class="{ expanded: isExpanded}" 
-		v-bind:title="wordlist.length"
-		@click="isExpanded = !isExpanded"
-	>
+	<div class="letter" v-bind:class="{ expanded: isExpanded}">
 		<div class="letter-header">
-			<div class="letter-text" v-bind:class="{ hasWords: wordlist.length > 0}">
+			<div class="letter-text" 
+				:class="{ hasWords: wordlist.length > 0}"
+				@click="isExpanded = !isExpanded"
+			>
 				{{ letter }}
 			</div>
 			<div class="letter-wordCount">{{ wordlist.length }}</div>

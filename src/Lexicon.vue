@@ -1,7 +1,7 @@
 <template>
   <div id="app">
     <div class="lexicon">
-      <h1 class="lexicon-header">Add Words to Your Lexicon</h1>
+      <h1 class="lexicon-header">Add a Word to Your Lexicon</h1>
       <div class="word-count">{{ words.length }} words and counting...</div>
       <div class="lexicon-container">
         <input type="text" v-model="word" v-on:keyup.enter="addWord" />
@@ -9,7 +9,7 @@
           <Letter v-for="letter in letters" 
             :letter="letter"
             :key="letter"
-            :wordlist="wordsForLetter(letter)"
+            :wordlist="wordsUnderLetter(letter)"
             :deleteWord="onDeleteWord" />
         </div>
       </div>
@@ -26,7 +26,7 @@
           @click="showMenu = !showMenu"
         />
         <div class="userDetails">
-          <div class="provider">{{ user.providerData[0].providerId === 'google.com' ? 'Google Account' : '' }}</div>
+          <div class="provider">{{ user.providerData[0].providerId === 'google.com' ? 'Google Account' : 'Account Info' }}</div>
           <div class="displayName">{{ user.displayName }}</div>
           <div class="email">{{ user.email }}</div>
         </div>
@@ -49,6 +49,7 @@
   // Pulls the user's wordlist from the database
   const getWordList = (userId) => {
     let tempList = [];
+    // eslint-disable-next-line
     console.log('getWordList');
     firestore.collection('users').doc(userId).collection('lexicon').get()
       .then(querySnapshot => {
@@ -117,7 +118,6 @@
             })
 
             if(tempList) {
-              console.log('Word Count:',tempList.length);
               this.words = tempList;
             }
 
@@ -137,7 +137,7 @@
 
         // TODO: Check database if word already exists
         if (this.words.map(w => w.text).includes(newWord)){
-          newWord = '';
+          this.word = '';
           return;
         }
 
@@ -152,10 +152,10 @@
               timestamp: timestamp 
             })
             .then(doc => {
-              // Update the word's id to match the DB's reference ID for the word
-              this.words.filter(w => w.id === timestamp)[0].id = doc.id;
+              const newId = doc.id;
+              this.words.filter(w => w.id === timestamp)[0].id = newId;
               // eslint-disable-next-line
-              // console.log('Word successfully added to Firebase lexicon:', doc.id);
+              console.log('Word successfully added to Firebase lexicon:', newId);
             })
             .catch(error => {
               // eslint-disable-next-line
@@ -166,6 +166,9 @@
         // Add words to session words list (if not signed in)
         this.words.push({ id: timestamp, text: newWord });
         this.word = '';
+
+        // eslint-disable-next-line
+        console.log('Word Count:',this.words.length);
       },
       onDeleteWord(word){
 
@@ -185,7 +188,39 @@
         // Remove word from session words list
         this.words = this.words.filter(item => item !== word);
       },
-      wordsForLetter(letter) {
+      // onLookupWord(word) {
+      //   API.oxfordSingleWord(word)
+      //     .then(response => {
+      //       // eslint-disable-next-line
+      //       console.log(response.data.results[0]);
+      //       this.oxford_results = response.data.results[0]
+      //     })
+      //     .catch(err => console.log(err));
+
+      //   API.oxfordSynonyms(word)
+      //     .then(response => {
+      //       // eslint-disable-next-line
+      //       console.log(response.data.results[0]);
+      //       this.oxford_synonyms = response.data.results[0]
+      //     })
+      //     .catch(err => console.log(err));
+      // },
+      // onLookupSynonyms(word) {
+      //   // Do something here
+      // },
+      extractSynonyms(wordId, lexicalEntryId, entryId, senseId) {
+        const word = this.state.oxford_synonyms[wordId];
+        if(word === undefined){
+          return [];
+        }
+
+        const lexicalEntries = word.lexicalEntries[lexicalEntryId];
+        const entries = (lexicalEntries !== undefined) ? lexicalEntries.entries[entryId] : undefined;
+        const senses = (entries !== undefined) ? entries.senses[senseId] : undefined;
+        const synonyms = (senses !== undefined) ? senses.synonyms : [];
+        return synonyms;
+      },
+      wordsUnderLetter(letter) {
         return this.words.filter(w => w.text.charAt(0) === letter);
       },
       onSignIn() {
