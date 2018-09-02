@@ -1,21 +1,19 @@
 <template>
-	<div class="letter" v-bind:class="{ expanded: isExpanded}">
+	<div class="letter" :class="{ expanded: isExpanded}" :data-letter="letter">
 		<div class="letter-header">
 			<div class="letter-text" 
 				:class="{ hasWords: wordlist.length > 0}"
 				@click="isExpanded = !isExpanded"
-			>
-				{{ letter }}
-			</div>
-			<div class="letter-wordCount">{{ wordlist.length }}</div>
-			<div class="letter-wordList">
-				<Word v-for="word in wordlist"
-            :word="word"
-            :letter="letter"
-            @delete="deleteWord"
-            :key="word.id" />
-			</div>
+				:data-count="wordlist.length"
+			>{{ letter }}</div>
 		</div>
+		<Word v-for="word in wordlist"
+        :word="word"
+        :letter="letter"
+        @delete="deleteWord"
+        @lookup="lookupWord"
+        :key="word.id" 
+    />
 	</div>
 </template>
 
@@ -27,7 +25,7 @@
 		components: {
 			Word
 		},
-		props: ['letter','wordlist', 'deleteWord'],
+		props: ['letter','wordlist', 'deleteWord', 'lookupWord'],
 		data() {
 			return {
 				isExpanded: false
@@ -49,21 +47,48 @@
 
 	.letter.expanded {
 		width: 100%;
+		display: flex;
+    flex-flow: row wrap;
 	}
 
+	/* New */
+
+	.letter.expanded .letter-header {
+		margin-right: 15px;
+	}
+
+	.letter.expanded .letter-text::after {
+    content: attr(data-count);
+    position: absolute;
+    top: -6px;
+    left: -6px;
+    width: 20px;
+    height: 20px;
+    border-radius: 50%;
+    color: #fff;
+    background-color: #3b12ec;
+    border: 1px solid #000;
+    font: 600 12px/1.5em serif;
+	}
+
+	/* Old */
+
 	.letter .letter-wordCount,
-	.letter .letter-wordList {
+	.letter .word {
 		display: none;
 	}
 
 	.letter.expanded .letter-wordCount,
-	.letter.expanded .letter-wordList {
-		display: block;
+	.letter.expanded .word {
+		display: inline-block;
 	}
 
 	.letter-header {
-		width: 100%;
+		/*width: 100%;*/
 		display: 	flex;
+		flex-flow: column;
+		position: relative;
+		width: 53px;
 	}
 
 	.letter-text {

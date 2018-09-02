@@ -10,7 +10,9 @@
             :letter="letter"
             :key="letter"
             :wordlist="wordsUnderLetter(letter)"
-            :deleteWord="onDeleteWord" />
+            :deleteWord="onDeleteWord" 
+            :lookupWord="onLookupWord"
+          />
         </div>
       </div>
     </div>
@@ -188,37 +190,9 @@
         // Remove word from session words list
         this.words = this.words.filter(item => item !== word);
       },
-      // onLookupWord(word) {
-      //   API.oxfordSingleWord(word)
-      //     .then(response => {
-      //       // eslint-disable-next-line
-      //       console.log(response.data.results[0]);
-      //       this.oxford_results = response.data.results[0]
-      //     })
-      //     .catch(err => console.log(err));
-
-      //   API.oxfordSynonyms(word)
-      //     .then(response => {
-      //       // eslint-disable-next-line
-      //       console.log(response.data.results[0]);
-      //       this.oxford_synonyms = response.data.results[0]
-      //     })
-      //     .catch(err => console.log(err));
-      // },
-      // onLookupSynonyms(word) {
-      //   // Do something here
-      // },
-      extractSynonyms(wordId, lexicalEntryId, entryId, senseId) {
-        const word = this.state.oxford_synonyms[wordId];
-        if(word === undefined){
-          return [];
-        }
-
-        const lexicalEntries = word.lexicalEntries[lexicalEntryId];
-        const entries = (lexicalEntries !== undefined) ? lexicalEntries.entries[entryId] : undefined;
-        const senses = (entries !== undefined) ? entries.senses[senseId] : undefined;
-        const synonyms = (senses !== undefined) ? senses.synonyms : [];
-        return synonyms;
+      onLookupWord(word) {
+        // Close any other words
+        console.log(`Expanding "${word}"`);
       },
       wordsUnderLetter(letter) {
         return this.words.filter(w => w.text.charAt(0) === letter);

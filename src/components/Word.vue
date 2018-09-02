@@ -1,11 +1,24 @@
 <template>
 	<div class="word" 
 		v-if="firstChar === letter" 
-		@click="lookupItem(word.text)"
 		:class="{ displayDef: showDef === true }"
 	>
-		{{ word.text }}
-		<!-- <div class="delete-word" @click="deleteItem(word)">X</div> -->
+		<div class="word-title">{{ word.text }}</div>
+		<div class="word-content" v-if="oxford_def.data">
+			<div 
+				v-if="oxford_def.status === 200"
+				v-for="lexicalEntry in oxford_def.data.results[0].lexicalEntries"
+			>
+				<h6>{{lexicalEntry.lexicalCategory}}</h6>
+				<ol class="resultsList" v-for="entry in lexicalEntry.entries">
+					<li v-for="sense in entry.senses">{{sense.definitions[0]}}</li>
+				</ol>
+			</div>
+			<div v-else-if="oxford_def.status === 404">Not Found</div>
+		</div>
+		<div class="word-content" v-else>Loading...</div>
+		<div class="word-close" @click="closeDef">X</div>
+		<div class="word-overlay" @click="lookupItem(word.text)"></div>
 	</div>
 </template>
 
@@ -25,96 +38,115 @@
 		},
 		methods: {
 			deleteItem(word) {
-				this.$emit('delete', word)
+				this.$emit('delete', word);
 			},
 			lookupItem(word) {
-				// this.$emit('lookup', word);
+				this.$emit('lookup', word);
 				this.showDef = !this.showDef;
 
-				API.oxfordSingleWord(word)
-					.then(response => {
-						// eslint-disable-next-line
-						console.log('Definition:',{
-							word: word,
-							data: response.data,
-							status: response.status,
-							statusText: response.statusText
-						});
-
-						this.oxford_def = {
-							word: word,
-							data: response.data,
-							status: response.status,
-							statusText: response.statusText
-						};
-					})
-					.catch(err => {
-						if(err.response) {
+				// Lookup the word if no definition has been stored
+				if(!this.oxford_def.data) {
+					API.oxfordSingleWord(word)
+						.then(response => {
 							// eslint-disable-next-line
-							console.log('Definition:', {
+							console.log('Definition:',{
 								word: word,
-								data: err.response.data,
-								status: err.response.status,
-								statusText: err.response.statusText
+								data: response.data,
+								status: response.status,
+								statusText: response.statusText
 							});
 
 							this.oxford_def = {
 								word: word,
-								data: err.response.data,
-								status: err.response.status,
-								statusText: err.response.statusText
+								data: response.data,
+								status: response.status,
+								statusText: response.statusText
 							};
-						} else if (err.request) {
-							// eslint-disable-next-line
-							console.log('Definition (Request):', err.request);
-						} else {
-							// eslint-disable-next-line
-							console.log('Definition (Error)',err.message);
-						}
-					});
+						})
+						.catch(err => {
+							if(err.response) {
+								// eslint-disable-next-line
+								console.log('Definition:', {
+									word: word,
+									data: err.response.data,
+									status: err.response.status,
+									statusText: err.response.statusText
+								});
 
-				API.oxfordSynonyms(word)
-					.then(response => {
-						// eslint-disable-next-line
-						console.log('Synonyms:',{
-							word: word,
-							data: response.data,
-							status: response.status,
-							statusText: response.statusText
+								this.oxford_def = {
+									word: word,
+									data: err.response.data,
+									status: err.response.status,
+									statusText: err.response.statusText
+								};
+							} else if (err.request) {
+								// eslint-disable-next-line
+								console.log('Definition (Request):', err.request);
+							} else {
+								// eslint-disable-next-line
+								console.log('Definition (Error)',err.message);
+							}
 						});
 
-						this.oxford_syn = {
-							word: word,
-							data: response.data,
-							status: response.status,
-							statusText: response.statusText
-						};
-					})
-					.catch(err => {
-						if(err.response) {
+					API.oxfordSynonyms(word)
+						.then(response => {
 							// eslint-disable-next-line
-							console.log('Synonyms:', {
+							console.log('Synonyms:',{
 								word: word,
-								data: err.response.data,
-								status: err.response.status,
-								statusText: err.response.statusText
+								data: response.data,
+								status: response.status,
+								statusText: response.statusText
 							});
 
 							this.oxford_syn = {
 								word: word,
-								data: err.response.data,
-								status: err.response.status,
-								statusText: err.response.statusText
+								data: response.data,
+								status: response.status,
+								statusText: response.statusText
 							};
-						} else if (err.request) {
-							// eslint-disable-next-line
-							console.log('Synonyms (Request):', err.request);
-						} else {
-							// eslint-disable-next-line
-							console.log('Synonyms (Error)',err.message);
-						}
-					});
-			}
+						})
+						.catch(err => {
+							if(err.response) {
+								// eslint-disable-next-line
+								console.log('Synonyms:', {
+									word: word,
+									data: err.response.data,
+									status: err.response.status,
+									statusText: err.response.statusText
+								});
+
+								this.oxford_syn = {
+									word: word,
+									data: err.response.data,
+									status: err.response.status,
+									statusText: err.response.statusText
+								};
+							} else if (err.request) {
+								// eslint-disable-next-line
+								console.log('Synonyms (Request):', err.request);
+							} else {
+								// eslint-disable-next-line
+								console.log('Synonyms (Error)',err.message);
+							}
+						});
+				}
+
+			},
+			extractSynonyms(wordId, lexicalEntryId, entryId, senseId) {
+        const word = this.state.oxford_synonyms[wordId];
+        if(word === undefined){
+          return [];
+        }
+
+        const lexicalEntries = word.lexicalEntries[lexicalEntryId];
+        const entries = (lexicalEntries !== undefined) ? lexicalEntries.entries[entryId] : undefined;
+        const senses = (entries !== undefined) ? entries.senses[senseId] : undefined;
+        const synonyms = (senses !== undefined) ? senses.synonyms : [];
+        return synonyms;
+      },
+      closeDef() {
+				this.showDef = !this.showDef;
+      }
 		}
 	}
 </script>
@@ -132,11 +164,6 @@
     margin-right: 10px;
     padding: 12px;
     overflow: hidden;
-    cursor: pointer;
-    -webkit-user-select: none;
-    -moz-user-select: none;
-    -ms-user-select: none;
-    user-select: none;
 	}
 
 	.word:hover {
@@ -144,11 +171,80 @@
 		background-color: #F2D680;
 	}
 
+	.word .word-content,
+	.word .word-close {
+		display: none;
+	}
+
 	.word.displayDef {
 		width: 500px;
-		max-width: 80%;
+		width: 100%;
+		max-width: 100%;
 		height: 200px;
 		max-height: 80%;
+		margin-right: 0;
+		position: relative;
+	}
+
+	.word.displayDef .word-close {
+    display: block;
+    position: absolute;
+    top: 5px;
+    right: 5px;
+    font-size: 1em;
+    padding: 5px 10px;
+    background-color: #ccc;
+    border-radius: 5px;
+    cursor: pointer;
+    -webkit-user-select: none;
+    -moz-user-select: none;
+    -ms-user-select: none;
+    user-select: none;
+	}
+
+	/* word-overlay is the clickable overlay that launches word lookup */
+	.word .word-overlay {
+		position: absolute;
+		top: 0;
+		left: 0;
+		width: 100%;
+		height: 100%;
+		cursor: pointer;
+		-webkit-user-select: none;
+    -moz-user-select: none;
+    -ms-user-select: none;
+    user-select: none;
+	}
+
+	/* Set background to white when viewing word definition */
+	.word.displayDef:hover {
+		background-color: #fff;
+	}
+
+	/* Hide work-overlay when viewing word definition */
+	.word.displayDef .word-overlay {
+		display: none;
+	}
+
+	/* Content/Body */
+	.word.displayDef .word-content {
+		display: block;
+    text-align: left;
+    overflow-y: auto;
+    width: 100%;
+    height: 162px;
+	}
+
+	.word-content h6 {
+		margin-bottom: .5rem;
+		font: italic 500 1rem/1.2 sans-serif;
+		color: inherit;
+	}
+
+	.word.displayDef .word-title {
+		background-color: rgba(0,0,0,.03);
+		padding: 10px;
+		border-bottom: 1px solid #666;
 	}
 
 </style>
