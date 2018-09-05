@@ -11,7 +11,7 @@
 					:key="lexicalEntry.lexicalCategory"
 				>
 					<h6>{{lexicalEntry.lexicalCategory}}</h6>
-					<ol class="resultsList" v-for="entry in lexicalEntry.entries" :key="entry">
+					<ol class="resultsList" v-for="(entry, i) in lexicalEntry.entries" :key="i">
 						<li v-for="sense in entry.senses" v-bind:key="sense.id">{{sense.definitions[0]}}</li>
 					</ol>
 				</div>
@@ -237,7 +237,7 @@
     text-align: left;
     overflow-y: auto;
     width: 100%;
-    height: 162px;
+    height: 150px;
 	}
 
 	.word-content h6 {
@@ -263,7 +263,7 @@
     top: 17px;
     left: 17px;
     cursor: pointer;
-    color: #000;
+    color: #aaa;
     padding: 5px 10px;
     border-radius: 5px;
 	}
