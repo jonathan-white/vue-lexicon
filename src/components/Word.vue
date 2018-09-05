@@ -4,20 +4,23 @@
 		:class="{ displayDef: showDef === true }"
 	>
 		<div class="word-title">{{ word.text }}</div>
-		<div class="word-content" v-if="oxford_def.data">
-			<div 
-				v-if="oxford_def.status === 200"
-				v-for="lexicalEntry in oxford_def.data.results[0].lexicalEntries"
-			>
-				<h6>{{lexicalEntry.lexicalCategory}}</h6>
-				<ol class="resultsList" v-for="entry in lexicalEntry.entries">
-					<li v-for="sense in entry.senses">{{sense.definitions[0]}}</li>
-				</ol>
+		<div class="word-content" v-if="oxford_def.status">
+			<div v-if="oxford_def.status === 200">
+				<div 
+					v-for="lexicalEntry in oxford_def.data.results[0].lexicalEntries"
+					:key="lexicalEntry.lexicalCategory"
+				>
+					<h6>{{lexicalEntry.lexicalCategory}}</h6>
+					<ol class="resultsList" v-for="entry in lexicalEntry.entries" :key="entry">
+						<li v-for="sense in entry.senses" v-bind:key="sense.id">{{sense.definitions[0]}}</li>
+					</ol>
+				</div>
 			</div>
-			<div v-else-if="oxford_def.status === 404">Not Found</div>
+			<div class="word-content loading" v-else-if="oxford_def.status === 404">Not Found</div>
 		</div>
-		<div class="word-content" v-else>Loading...</div>
+		<div class="word-content loading" v-else>Loading...</div>
 		<div class="word-close" @click="closeDef">X</div>
+		<div class="word-delete" @click="deleteItem(word.text)">Delete</div>
 		<div class="word-overlay" @click="lookupItem(word.text)"></div>
 	</div>
 </template>
@@ -43,9 +46,9 @@
 			lookupItem(word) {
 				this.$emit('lookup', word);
 				this.showDef = !this.showDef;
-
+				
 				// Lookup the word if no definition has been stored
-				if(!this.oxford_def.data) {
+				if(!this.oxford_def.status) {
 					API.oxfordSingleWord(word)
 						.then(response => {
 							// eslint-disable-next-line
@@ -62,6 +65,7 @@
 								status: response.status,
 								statusText: response.statusText
 							};
+							
 						})
 						.catch(err => {
 							if(err.response) {
@@ -79,6 +83,7 @@
 									status: err.response.status,
 									statusText: err.response.statusText
 								};
+								
 							} else if (err.request) {
 								// eslint-disable-next-line
 								console.log('Definition (Request):', err.request);
@@ -130,7 +135,6 @@
 							}
 						});
 				}
-
 			},
 			extractSynonyms(wordId, lexicalEntryId, entryId, senseId) {
         const word = this.state.oxford_synonyms[wordId];
@@ -172,7 +176,8 @@
 	}
 
 	.word .word-content,
-	.word .word-close {
+	.word .word-close,
+	.word .word-delete {
 		display: none;
 	}
 
@@ -189,10 +194,10 @@
 	.word.displayDef .word-close {
     display: block;
     position: absolute;
-    top: 5px;
-    right: 5px;
-    font-size: 1em;
-    padding: 5px 10px;
+    top: 18px;
+    right: 18px;
+    font: 1em 'Marko One', serif;
+    padding: 2px 8px;
     background-color: #ccc;
     border-radius: 5px;
     cursor: pointer;
@@ -245,6 +250,28 @@
 		background-color: rgba(0,0,0,.03);
 		padding: 10px;
 		border-bottom: 1px solid #666;
+	}
+
+	.word.displayDef .loading {
+		text-align: center;
+		padding: 50px 0;
+	}
+
+	.word.displayDef .word-delete {
+    display: block;
+		position: absolute;
+    top: 17px;
+    left: 17px;
+    cursor: pointer;
+    color: #000;
+    padding: 5px 10px;
+    border-radius: 5px;
+	}
+
+	.word.displayDef .word-delete:hover {
+		color: #fff;
+		background-color: red;
+		box-shadow: 0 0 5px rgba(0,0,0,.7);
 	}
 
 </style>

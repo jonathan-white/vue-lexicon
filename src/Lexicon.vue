@@ -6,10 +6,12 @@
       <div class="lexicon-container">
         <input type="text" v-model="word" v-on:keyup.enter="addWord" />
         <div class="lexicon-content">
-          <Letter v-for="letter in letters" 
-            :letter="letter"
-            :key="letter"
-            :wordlist="wordsUnderLetter(letter)"
+          <Letter v-for="letterEntry in letters_extended" 
+            :key="letterEntry.letter"
+            :letter="letterEntry.letter"
+            :count="letterEntry.count"
+            :group="letterEntry.group"
+            :wordlist="wordsUnderLetter(letterEntry.letter)"
             :deleteWord="onDeleteWord" 
             :lookupWord="onLookupWord"
           />
@@ -45,7 +47,10 @@
   import Letter from './components/Letter.vue';
   import { firebase, auth, firestore } from './firebase';
 
+
+  // eslint-disable-next-line
   let lastSignIn = null;
+  // eslint-disable-next-line
   let lastSignOut = null;
 
   // Pulls the user's wordlist from the database
@@ -77,6 +82,7 @@
         letters: [
           'a','b','c','d','e','f','g','h','i','j','k','l','m','n','o','p','q','r','s','t','u','v','w','x','y','z'
         ],
+        letters_extended: [],
         word: '',
         user: null,
         showMenu: false
@@ -84,21 +90,39 @@
     },
 
     mounted: function() {
-      const refresh = setInterval(() => {
-        if(!this.user) {
-          this.user = auth.currentUser;
+      // eslint-disable-next-line
+      // const refresh = setInterval(() => {
+      //   if(!this.user) {
+      //     this.user = auth.currentUser;
+      //   }
+
+      //   if (auth.currentUser) {
+      //     if(!localStorage.getItem('uid')) {
+      //       localStorage.setItem('uid',auth.currentUser.uid);
+      //     }
+
+      //     if(this.words.length === 0) {
+      //       this.words = getWordList(auth.currentUser.uid);
+      //     }
+      //   }
+      // }, 500);
+      
+      this.letters_extended = this.countWordsForLetter();
+      
+      if(!this.user) {
+        this.user = auth.currentUser;
+      }
+
+      if (auth.currentUser) {
+        if(!localStorage.getItem('uid')) {
+          localStorage.setItem('uid',auth.currentUser.uid);
         }
 
-        if (auth.currentUser) {
-          if(!localStorage.getItem('uid')) {
-            localStorage.setItem('uid',auth.currentUser.uid);
-          }
-
-          if(this.words.length === 0) {
-            this.words = getWordList(auth.currentUser.uid);
-          }
+        if(this.words.length === 0) {
+          this.words = getWordList(auth.currentUser.uid);
+          this.countWordsForLetter();
         }
-      }, 500);
+      }
 
       // Subscribe to updates from other devices/instances
       if(auth.currentUser) {
@@ -121,6 +145,7 @@
 
             if(tempList) {
               this.words = tempList;
+              this.countWordsForLetter();
             }
 
           })
@@ -154,23 +179,20 @@
               timestamp: timestamp 
             })
             .then(doc => {
+              // Word successfully added to lexicon
               const newId = doc.id;
               this.words.filter(w => w.id === timestamp)[0].id = newId;
-              // eslint-disable-next-line
-              console.log('Word successfully added to Firebase lexicon:', newId);
+              this.letters_extended = this.countWordsForLetter();
             })
-            .catch(error => {
-              // eslint-disable-next-line
-              console.log('Error while adding word to Firebase lexicon:',error.message);
+            .catch(() => {
+              // Word not added to lexicon
             });
         }
 
         // Add words to session words list (if not signed in)
         this.words.push({ id: timestamp, text: newWord });
         this.word = '';
-
-        // eslint-disable-next-line
-        console.log('Word Count:',this.words.length);
+        this.letters_extended = this.countWordsForLetter();
       },
       onDeleteWord(word){
 
@@ -178,20 +200,20 @@
           firestore.collection('users').doc(auth.currentUser.uid).collection('lexicon')
             .doc(word.id).delete()
             .then(() => {
-              // eslint-disable-next-line
-              // console.log('Word successfully removed from Firebase lexicon:');
+              // Word successfully removed from lexicon
             })
-            .catch(error => {
-              // eslint-disable-next-line
-              console.log('Error while removing from Firebase lexicon:',error.message);
+            .catch(() => {
+              // Error while removing from lexicon
             });
         }
 
         // Remove word from session words list
-        this.words = this.words.filter(item => item !== word);
+        this.words = this.words.filter(item => item.text !== word);
+        this.letters_extended = this.countWordsForLetter();
       },
       onLookupWord(word) {
         // Close any other words
+        // eslint-disable-next-line
         console.log(`Expanding "${word}"`);
       },
       wordsUnderLetter(letter) {
@@ -261,6 +283,37 @@
 
           // official signout
           auth.signOut();
+        });
+      },
+      countWords(letter) {
+        return this.words.filter(w => w.text.charAt(0) === letter).length;
+      },
+      countWordsForLetter() {
+        const counts = this.letters.map(l => this.countWords(l)),
+          min = Math.min(...counts),
+          max = Math.max(...counts),
+          increment = ((max - min) * .2).toFixed(0);
+
+        let group = 'one';
+
+        return this.letters.map((l, index) => {
+          if (this.countWords(l) < (increment * 1)) {
+            group = 'one';
+          } else if (this.countWords(l) < (increment * 2)) {
+            group = 'two';
+          } else if (this.countWords(l) < (increment * 3)) {
+            group = 'three';
+          } else if (this.countWords(l) < (increment * 4)) {
+            group = 'four';
+          } else if (this.countWords(l) >= (increment * 4)) {
+            group = 'five';
+          }
+          return {
+            order: index,
+            letter: l, 
+            count: this.countWords(l),
+            group: group
+          }
         });
       }
     }

@@ -2,7 +2,7 @@
 	<div class="letter" :class="{ expanded: isExpanded}" :data-letter="letter">
 		<div class="letter-header">
 			<div class="letter-text" 
-				:class="{ hasWords: wordlist.length > 0}"
+				:class="[{ hasWords: wordlist.length > 0},group]"
 				@click="isExpanded = !isExpanded"
 				:data-count="wordlist.length"
 			>{{ letter }}</div>
@@ -25,7 +25,7 @@
 		components: {
 			Word
 		},
-		props: ['letter','wordlist', 'deleteWord', 'lookupWord'],
+		props: ['letter','wordlist', 'deleteWord', 'lookupWord', 'count', 'group'],
 		data() {
 			return {
 				isExpanded: false
@@ -107,26 +107,35 @@
 	}
 
 	.letter-text.hasWords {
-		background-color: rgba(255, 0, 72, 1);
+		background-color: #1a97d8;
 	}
-	.letter-text.hasWords.highlight-one {
-		background-color: #ff0048;
+	.letter-text.hasWords.one {
+		background-color: #1a97d8;
 	}
-	.letter-text.hasWords.highlight-two {
-		background-color: #ff001e;
+	.letter-text.hasWords.two {
+		background-color: #1a6dd8;
 	}
-	.letter-text.hasWords.highlight-three {
-		background-color: #e1001e;
+	.letter-text.hasWords.three {
+		background-color: #1a37d8;
+		color: #fff;
 	}
-	.letter-text.hasWords.highlight-four {
-		background-color: #c9001e;
+	.letter-text.hasWords.four {
+		background-color: #1a07d8;
+		color: #fff;
 	}
-	.letter-text.hasWords.highlight-five {
-		background-color: #99001e;
+	.letter-text.hasWords.five {
+		background-color: #1a3160;
+		color: #fff;
 	}
 
-	.letter-text:hover {
-		background-color: rgba(26, 151, 216, .7);
+	.letter-text:hover,
+	.letter-text.hasWords.one:hover,
+	.letter-text.hasWords.two:hover,
+	.letter-text.hasWords.three:hover,
+	.letter-text.hasWords.four:hover,
+	.letter-text.hasWords.five:hover {
+		background-color: #ff0048;
+		color: #000;
 	}
 
 	.letter-wordCount {
