@@ -42,7 +42,7 @@
 		min-height: 100px;
 		min-height: 52px;
 		min-width: 52px;
-		overflow: hidden;
+		/*overflow: hidden;*/
 	}
 
 	.letter.expanded {
@@ -55,6 +55,10 @@
 
 	.letter.expanded .letter-header {
 		margin-right: 15px;
+	}
+
+	.letter .letter-text:hover {
+		transform: scale(1.1);
 	}
 
 	.letter.expanded .letter-text::after {
@@ -73,12 +77,10 @@
 
 	/* Old */
 
-	.letter .letter-wordCount,
 	.letter .word {
 		display: none;
 	}
 
-	.letter.expanded .letter-wordCount,
 	.letter.expanded .word {
 		display: inline-block;
 	}
@@ -136,17 +138,6 @@
 	.letter-text.hasWords.five:hover {
 		background-color: #ff0048;
 		color: #000;
-	}
-
-	.letter-wordCount {
-		position: absolute;
-		border: 4px solid transparent;
-		width: 20px;
-		padding: 10px;
-		font-size: 20px;
-		top: 50px;
-		font-weight: 800;
-		color: #aaa;
 	}
 
 	.letter-wordList {

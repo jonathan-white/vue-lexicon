@@ -120,7 +120,7 @@
 
         if(this.words.length === 0) {
           this.words = getWordList(auth.currentUser.uid);
-          this.countWordsForLetter();
+          // this.letters_extended = this.countWordsForLetter();
         }
       }
 
@@ -145,7 +145,7 @@
 
             if(tempList) {
               this.words = tempList;
-              this.countWordsForLetter();
+              // this.letters_extended = this.countWordsForLetter();
             }
 
           })
@@ -326,6 +326,8 @@
     padding: 0;
     font-family: Bitter, serif;
     background: linear-gradient(#aeffae, #3d99ff);
+    background-image: linear-gradient(#B1E6D1, #3D7B80);
+    
     height: auto;
     min-height: 100vh;
     display: flex;
@@ -342,6 +344,7 @@
     background: #f6f6f6;
     padding-bottom: 60px;
     margin: 50px auto;
+    border-radius: 5px;
   }
 
   .lexicon-header {
