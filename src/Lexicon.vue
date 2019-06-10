@@ -78,8 +78,6 @@
       this.letters_extended = this.countWordsForLetter();
     
       if (auth.currentUser) {
-        // eslint-disable-next-line
-        console.log(`User ${auth.currentUser.uid} is logged in`)
         this.user = auth.currentUser;
 
         if(!localStorage.getItem('uid')) {
@@ -152,16 +150,17 @@
             // eslint-disable-next-line
             // console.log('Successfully deleted: ' + word);
           })
-          .catch(error => {
+          .catch(() => {
+            // Error while deleting word
             // eslint-disable-next-line
-            console.log('Error while deleting: ' + word, error);
+            // console.log('Error while deleting: ' + word, error);
           });
         }
       },
-      onLookupWord(word) {
+      onLookupWord() {
         // Close any other words
         // eslint-disable-next-line
-        console.log(`Expanding "${word}"`);
+        // console.log(`Expanding "${word}"`);
       },
       wordsUnderLetter(letter) {
         return this.words.filter(w => w.text.charAt(0) === letter);
@@ -177,9 +176,6 @@
             this.user = result.user;
 
             const timestamp = new Date();
-
-            // eslint-disable-next-line
-            console.log('User ID: ' + result.user.uid);
 
             // Populate list of words once signed in
             (result.user.uid) 
