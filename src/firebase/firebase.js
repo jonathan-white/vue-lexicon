@@ -17,11 +17,6 @@ if(!firebase.apps.length) {
 
 // Setup Firestore
 const firestore = firebase.firestore();
-const fs_settings = {
-  timestampsInSnapshots: true
-};
-firestore.settings(fs_settings);
-
 const auth = firebase.auth();
 
 export {

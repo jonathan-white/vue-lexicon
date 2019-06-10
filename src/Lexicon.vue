@@ -52,23 +52,7 @@
   let lastSignIn = null;
   // eslint-disable-next-line
   let lastSignOut = null;
-
-  // Pulls the user's wordlist from the database
-  const getWordList = (userId) => {
-    let tempList = [];
-    // eslint-disable-next-line
-    console.log('getWordList');
-    firestore.collection('users').doc(userId).collection('lexicon').get()
-      .then(querySnapshot => {
-      querySnapshot.forEach(doc => {
-        // Update the local list item to use the DB's doc number
-        // console.log(doc.id, " => ", {...doc.data(), id: doc.id});
-        tempList.push({...doc.data(), id: doc.id});
-      });
-      return tempList;
-    });
-    return tempList;
-  };
+  var unsubscribe;
 
   export default {
     name: 'lexicon',
@@ -90,69 +74,32 @@
     },
 
     mounted: function() {
-      // eslint-disable-next-line
-      // const refresh = setInterval(() => {
-      //   if(!this.user) {
-      //     this.user = auth.currentUser;
-      //   }
 
-      //   if (auth.currentUser) {
-      //     if(!localStorage.getItem('uid')) {
-      //       localStorage.setItem('uid',auth.currentUser.uid);
-      //     }
-
-      //     if(this.words.length === 0) {
-      //       this.words = getWordList(auth.currentUser.uid);
-      //     }
-      //   }
-      // }, 500);
-      
       this.letters_extended = this.countWordsForLetter();
-      
-      if(!this.user) {
-        this.user = auth.currentUser;
-      }
-
+    
       if (auth.currentUser) {
+        // eslint-disable-next-line
+        console.log(`User ${auth.currentUser.uid} is logged in`)
+        this.user = auth.currentUser;
+
         if(!localStorage.getItem('uid')) {
           localStorage.setItem('uid',auth.currentUser.uid);
         }
 
         if(this.words.length === 0) {
-          this.words = getWordList(auth.currentUser.uid);
-          // this.letters_extended = this.countWordsForLetter();
+          this.fetchData(auth.currentUser.uid);
         }
       }
 
-      // Subscribe to updates from other devices/instances
-      if(auth.currentUser) {
-        firestore.collection('users').doc(auth.currentUser.uid)
-          .onSnapshot(doc => {
-            // console.log(doc.data());
-            lastSignIn = doc.data().lastSignIn;
-            lastSignOut = doc.data().lastSignOut;
-          });
-
-        firestore.collection('users').doc(auth.currentUser.uid).collection('lexicon')
-          .onSnapshot(lexCollection => {
-            let tempList = [];
-            lexCollection.docs.forEach(doc => {
-              doc.ref.get().then(docItem => {
-                // console.log(docItem.data());
-                tempList.push(docItem.data());
-              });
-            })
-
-            if(tempList) {
-              this.words = tempList;
-              // this.letters_extended = this.countWordsForLetter();
-            }
-
-          })
-      }
     },
 
     methods: {
+      fetchData(userId) {
+        unsubscribe = firestore.collection('users').doc(userId)
+          .onSnapshot(doc => {
+            this.words = doc.data().lexicon || [];
+          });
+      },
       addWord() {
         // validate word
         if (!this.word){
@@ -170,46 +117,46 @@
 
         const timestamp = new Date().getTime();
 
+        // Add words to session words list (if not signed in)
+        this.words.push({ text: newWord, timestamp: timestamp });
+        this.word = '';
+        this.letters_extended = this.countWordsForLetter();
+
         // Add words to the Firebase Firestore
         if(auth.currentUser) {
-          firestore.collection('users').doc(auth.currentUser.uid).collection('lexicon')
-            .add({ 
-              id: timestamp, 
-              text: newWord, 
-              timestamp: timestamp 
-            })
-            .then(doc => {
+
+          firestore.collection('users').doc(auth.currentUser.uid).set({
+            lexicon: this.words
+          }, { merge: true }).then(() => {
               // Word successfully added to lexicon
-              const newId = doc.id;
-              this.words.filter(w => w.id === timestamp)[0].id = newId;
               this.letters_extended = this.countWordsForLetter();
             })
             .catch(() => {
               // Word not added to lexicon
             });
-        }
 
-        // Add words to session words list (if not signed in)
-        this.words.push({ id: timestamp, text: newWord });
-        this.word = '';
-        this.letters_extended = this.countWordsForLetter();
+          this.fetchData(auth.currentUser.uid);
+        }
       },
       onDeleteWord(word){
+        
+        // Remove word from session words list
+        this.words = this.words.filter(w => w.text !== word) || [];
+        this.letters_extended = this.countWordsForLetter();
 
         if(auth.currentUser) {
-          firestore.collection('users').doc(auth.currentUser.uid).collection('lexicon')
-            .doc(word.id).delete()
-            .then(() => {
-              // Word successfully removed from lexicon
-            })
-            .catch(() => {
-              // Error while removing from lexicon
-            });
+          firestore.collection('users').doc(auth.currentUser.uid).set({
+            lexicon: this.words
+          }, { merge: true})
+          .then(() => {
+            // eslint-disable-next-line
+            // console.log('Successfully deleted: ' + word);
+          })
+          .catch(error => {
+            // eslint-disable-next-line
+            console.log('Error while deleting: ' + word, error);
+          });
         }
-
-        // Remove word from session words list
-        this.words = this.words.filter(item => item.text !== word);
-        this.letters_extended = this.countWordsForLetter();
       },
       onLookupWord(word) {
         // Close any other words
@@ -231,9 +178,12 @@
 
             const timestamp = new Date();
 
+            // eslint-disable-next-line
+            console.log('User ID: ' + result.user.uid);
+
             // Populate list of words once signed in
             (result.user.uid) 
-              ? this.words = getWordList(result.user.uid) 
+              ? this.fetchData(result.user.uid) 
               : this.words = [];
 
             // Add user sign up/sign in details in Firestore
@@ -249,17 +199,17 @@
               };
 
               firestore.collection('users').doc(result.user.uid)
-                .set(userData, { merge: true }).then(() => {
-                localStorage.setItem('uid',result.user.uid);
-              });
+                .set(userData, { merge: true })
+                .then(() => {
+                  localStorage.setItem('uid',result.user.uid);
+                });
             } else {
-              // Create a new user in Firestore
-              const userData = { lastSignIn: timestamp };
-
+              // Sign in an existing user
               firestore.collection('users').doc(result.user.uid)
-                .set(userData, { merge: true }).then(() => {
-                localStorage.setItem('uid',result.user.uid);
-              });
+                .set({ lastSignIn: timestamp }, { merge: true })
+                .then(() => {
+                  localStorage.setItem('uid',result.user.uid);
+                });
             }
           })
           .catch(error => {
@@ -268,12 +218,11 @@
           })
       },
       onSignOut() {
+        unsubscribe();
+
         const timestamp = new Date();
-
-        const userData = { lastSignOut: timestamp };
-
-        firestore.collection('users').doc(this.user.uid)
-          .set(userData, { merge: true }).then(() => {
+        firestore.collection('users').doc(auth.currentUser.uid)
+          .set({ lastSignOut: timestamp }, { merge: true }).then(() => {
 
           // reset variables
           this.user = null;
@@ -286,7 +235,7 @@
         });
       },
       countWords(letter) {
-        return this.words.filter(w => w.text.charAt(0) === letter).length;
+        return this.words ? this.words.filter(w => w.text.charAt(0) === letter).length : 0;
       },
       countWordsForLetter() {
         const counts = this.letters.map(l => this.countWords(l)),
@@ -348,8 +297,9 @@
   }
 
   .lexicon-header {
-    color: black;
     font-family: Bitter, serif;
+    font-family: 'Crushed', cursive;
+    color: black;
     font-weight: 400;
     text-transform: uppercase;
     margin: 70px auto 30px;
@@ -432,7 +382,8 @@
     letter-spacing: .8px;
     transition: visibility 1s 500ms ease;
     position: absolute;
-    right: 5px;
+    right: 80px;
+    top: 5px;
   }
 
   .userDetails .provider {

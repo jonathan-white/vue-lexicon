@@ -52,12 +52,12 @@
 					API.oxfordSingleWord(word)
 						.then(response => {
 							// eslint-disable-next-line
-							console.log('Definition:',{
-								word: word,
-								data: response.data,
-								status: response.status,
-								statusText: response.statusText
-							});
+							// console.log('Definition:',{
+							// 	word: word,
+							// 	data: response.data,
+							// 	status: response.status,
+							// 	statusText: response.statusText
+							// });
 
 							this.oxford_def = {
 								word: word,
@@ -70,12 +70,12 @@
 						.catch(err => {
 							if(err.response) {
 								// eslint-disable-next-line
-								console.log('Definition:', {
-									word: word,
-									data: err.response.data,
-									status: err.response.status,
-									statusText: err.response.statusText
-								});
+								// console.log('Definition:', {
+								// 	word: word,
+								// 	data: err.response.data,
+								// 	status: err.response.status,
+								// 	statusText: err.response.statusText
+								// });
 
 								this.oxford_def = {
 									word: word,
@@ -96,12 +96,12 @@
 					API.oxfordSynonyms(word)
 						.then(response => {
 							// eslint-disable-next-line
-							console.log('Synonyms:',{
-								word: word,
-								data: response.data,
-								status: response.status,
-								statusText: response.statusText
-							});
+							// console.log('Synonyms:',{
+							// 	word: word,
+							// 	data: response.data,
+							// 	status: response.status,
+							// 	statusText: response.statusText
+							// });
 
 							this.oxford_syn = {
 								word: word,
@@ -113,12 +113,12 @@
 						.catch(err => {
 							if(err.response) {
 								// eslint-disable-next-line
-								console.log('Synonyms:', {
-									word: word,
-									data: err.response.data,
-									status: err.response.status,
-									statusText: err.response.statusText
-								});
+								// console.log('Synonyms:', {
+								// 	word: word,
+								// 	data: err.response.data,
+								// 	status: err.response.status,
+								// 	statusText: err.response.statusText
+								// });
 
 								this.oxford_syn = {
 									word: word,
