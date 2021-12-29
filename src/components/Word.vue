@@ -86,10 +86,24 @@
 								
 							} else if (err.request) {
 								// eslint-disable-next-line
-								console.log('Definition (Request):', err.request);
+								console.log('Definition (Request Error):', err.request);
+
+                this.oxford_def = {
+									word: "Error loading word",
+									data: "Error loading definition",
+									status: 500,
+									statusText: "null"
+								};
 							} else {
 								// eslint-disable-next-line
 								console.log('Definition (Error)',err.message);
+
+                this.oxford_def = {
+									word: "Error loading word",
+									data: "Error loading definition",
+									status: 500,
+									statusText: "null"
+								};
 							}
 						});
 
@@ -128,7 +142,7 @@
 								};
 							} else if (err.request) {
 								// eslint-disable-next-line
-								console.log('Synonyms (Request):', err.request);
+								console.log('Synonyms (Request Error):', err.request);
 							} else {
 								// eslint-disable-next-line
 								console.log('Synonyms (Error)',err.message);
